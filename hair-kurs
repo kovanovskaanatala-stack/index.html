@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест для парикмахеров — Hairy Course</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root { --tg-theme-bg-color: #ffffff; --tg-theme-text-color: #222222; --tg-theme-button-color: #2481cc; }
+        body { font-family: sans-serif; background-color: var(--tg-theme-bg-color); color: var(--tg-theme-text-color); padding: 16px; }
+        .card { background: rgba(128, 128, 128, 0.08); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+        .btn-option { display: block; width: 100%; padding: 14px; margin-bottom: 10px; background: white; border: 1px solid #ccc; border-radius: 8px; text-align: left; cursor: pointer; }
+        .correct { background-color: #4caf50 !important; color: white; }
+        .wrong { background-color: #f44336 !important; color: white; }
+        .rationale { display: none; padding: 12px; background: #e3f2fd; border-left: 4px solid #2481cc; margin-top: 10px; border-radius: 4px; }
+        #result-screen { display: none; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <div id="quiz-zone">
+        <div class="card"><div id="question" style="font-size: 18px; font-weight: bold;">Загрузка...</div></div>
+        <div id="options"></div>
+        <div id="rationale" class="rationale"></div>
+    </div>
+
+    <div id="result-screen">
+        <div class="card">
+            <h2 id="score-title">Тест завершен!</h2>
+            <p id="score-desc" style="font-size: 16px; line-height: 1.4;"></p>
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        const quizData = [
+            {
+                q: "Какое главное условие необходимо соблюсти, чтобы свободные аминокислоты удержались внутри структуры поврежденного блонда?",
+                options: [
+                    { text: "Применение технического продукта с кислым pH для фиксации за счет ионного притяжения.", isCorrect: true, text_r: "Правильно! Кислый pH смещает заряд волоса к его изоэлектрической точке, закрывая кутикулу и фиксируя активы." },
+                    { text: "Прогревание состава утюжком на температуре 230°C.", isCorrect: false, text_r: "Неверно! Экстремальный нагрев поврежденного блонда приведет к разрушению кератина." }
+                ]
+            },
+            {
+                q: "После дорогого ухода волосы стали жесткими и начали обламываться. В чем технологическая ошибка мастера?",
+                options: [
+                    { text: "Перепротеинизация (избыток белка) без последующего размягчения липидами.", isCorrect: true, text_r: "Правильно! Без пластичных липидов избыток белка делает волос хрупким." },
+                    { text: "Использование маски с pH 5.5.", isCorrect: false, text_r: "Неверно. pH 5.5 оптимален для структуры волоса." }
+                ]
+            }
+        ];
+
+        let currentQuestion = 0;
+        let score = 0;
+        let answered = false;
+
+        function loadQuestion() {
+            answered = false;
+            document.getElementById('rationale').style.display = 'none';
+            tg.MainButton.hide();
+
+            const qData = quizData[currentQuestion];
+            document.getElementById('question').innerText = qData.q;
+            const container = document.getElementById('options');
+            container.innerHTML = '';
+
+            qData.options.forEach((opt) => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-option';
+                btn.innerText = opt.text;
+                btn.onclick = () => {
+                    if (answered) return;
+                    answered = true;
+                    document.getElementById('rationale').innerText = opt.text_r;
+                    document.getElementById('rationale').style.display = 'block';
+                    if (opt.isCorrect) { btn.classList.add('correct'); score++; } else { btn.classList.add('wrong'); }
+                    tg.MainButton.setText(currentQuestion + 1 < quizData.length ? "СЛЕДУЮЩИЙ ВОПРОС" : "ПОСМОТРЕТЬ РЕЗУЛЬТАТ");
+                    tg.MainButton.show();
+                };
+                container.appendChild(btn);
+            });
+        }
+
+        tg.onEvent('mainButtonClicked', function() {
+            currentQuestion++;
+            if (currentQuestion < quizData.length) {
+                loadQuestion();
+            } else {
+                tg.MainButton.hide();
+                document.getElementById('quiz-zone').style.display = 'none';
+                document.getElementById('result-screen').style.display = 'block';
+                
+                if (score < 2) {
+                    document.getElementById('score-desc').innerHTML = `<b>Твой результат: ${score} из 2. Нужно подтянуть знания!</b><br><br>Ты спотыкаешься на химии процессов (pH, КМК). Из-за этих слепых зон у клиентов уход вымывается за неделю, а блондинки уходят с жесткими концами.<br><br>👉 Чтобы исправить это и стать топ-технологом, ждем тебя на «Волосатом курсе»!`;
+                } else {
+                    document.getElementById('score-desc').innerHTML = `<b>Твой результат: ${score} из 2. Великолепно! Ты профи!</b><br><br>Ты отлично понимаешь разницу между гидрофобностью и работой ламеллярных эмульсий. Тебе пора переходить на уровень создания собственных протоколов.<br><br>🚀 Ждем тебя на продвинутом уровне «Волосатого курса»!`;
+                }
+                tg.MainButton.setText("ЗАКРЫТЬ ТЕСТ");
+                tg.MainButton.show();
+                tg.onEvent('mainButtonClicked', () => tg.close());
+            }
+        });
+
+        loadQuestion();
+    </script>
+</body>
+</html>
